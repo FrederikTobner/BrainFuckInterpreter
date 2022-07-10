@@ -1,146 +1,176 @@
 ﻿using System.Security;
 using System.Text;
 
-namespace BrainFuckInterpreter
+namespace BrainFuckInterpreter;
+
+internal static class Interpreter
 {
-    internal static class Interpreter
+    /// <summary>
+    /// Pointer of the brainfuck program
+    /// </summary>
+    private static int pointer;
+
+    /// <summary>
+    /// Memory size
+    /// </summary>
+    private static readonly int memorySize = 1048576;
+
+    /// <summary>
+    /// Memory for the brainfuck program
+    /// </summary>
+    private static readonly byte[] memory = new byte[memorySize];
+
+    internal static void Run(string[] args)
     {
-        private static int pointer;
-        private static readonly int memorySize = 65535;
-        private static readonly byte[] memory = new byte[memorySize];
+        if (args.Length is 0)
+            RunCommandPrompt();
+        else if (args.Length is 1)
+            RunFromFile(args[0]);
+        else
+            Console.WriteLine("usage: BrainFuckInterpreter [file]?");
 
-        internal static void RunCommandPrompt()
-        {
-            for (; ; )
-            {
-                Console.WriteLine(">>");
-                string? brainFuckProgram = Console.ReadLine();
-                if (brainFuckProgram is null || brainFuckProgram is "")
-                {
-                    return;
-                }
-                Interpreter.Interpret(brainFuckProgram);
-                Console.WriteLine();
-            }
-        }
+    }
 
-        internal static void RunFromFile(string filePath)
+    //Run a brainfuck program from the command propmt
+    private static void RunCommandPrompt()
+    {
+        for (; ; )
         {
-            byte[]? file = null;
-            try
-            {
-                file = File.ReadAllBytes(filePath);
-            }
-            catch (Exception exception)
-            {
-                switch (exception)
-                {
-                    case PathTooLongException:
-                        Console.WriteLine("The specified path, file name, or both exceed the system-defined maximum length");
-                        break;
-                    case DirectoryNotFoundException:
-                        Console.WriteLine("The specified path is invalid (for example, it is on an unmapped drive)");
-                        break;
-                    case IOException:
-                        Console.WriteLine("An I/O error occurred while opening the file");
-                        break;
-                    case UnauthorizedAccessException:
-                        Console.WriteLine("This operation is not supported on the current platform. -or- path specified is a directory. -or- The caller does not have the required permission");
-                        break;
-                    case NotSupportedException:
-                        Console.WriteLine("path is in an invalid format.");
-                        break;
-                    case SecurityException:
-                        Console.WriteLine("The caller does not have the required permission.");
-                        break;
-                    default:
-                        Console.WriteLine("The file couldn't be found.");
-                        break;
-                }
-                Environment.Exit(65);
-            }
+            Console.WriteLine(">>");
             string? sourceCode = null;
-            try
+            try { sourceCode = Console.ReadLine(); }
+            catch (Exception)
             {
-                sourceCode = Encoding.UTF8.GetString(file);
+                Environment.Exit(0);
             }
-            catch (ArgumentException)
+            if (sourceCode is null || sourceCode is "")
             {
-                Console.WriteLine("Couldn't endcode the file with using UTF-8");
-                Environment.Exit(70);
+                return;
             }
-            Interpreter.Interpret(sourceCode);
-
+            IReadOnlyList<Token> brainFuckProgram = Lexer.ScanTokens(sourceCode);
+            Interpret(brainFuckProgram);
+            Console.WriteLine();
         }
+    }
 
-        private static void Interpret(string sourceCode)
+    //Run a brainfuck program from a file
+    private static void RunFromFile(string filePath)
+    {
+        byte[]? file = null;
+        try
         {
-            int cell = 0;
-            for (int i = 0; i < sourceCode.Length; i++)
+            file = File.ReadAllBytes(filePath);
+        }
+        catch (Exception exception)
+        {
+            switch (exception)
             {
-                switch (sourceCode[i])
-                {
-                    case '>':
-                        if (pointer == memorySize - 1)
-                            pointer = 0;
-                        else
-                            pointer++;
-                        break;
-                    case '<':
-                        if (pointer is 0)
+                case PathTooLongException:
+                    Console.WriteLine("The specified path, file name, or both exceed the system-defined maximum length");
+                    break;
+                case DirectoryNotFoundException:
+                    Console.WriteLine("The specified path is invalid (for example, it is on an unmapped drive)");
+                    break;
+                case IOException:
+                    Console.WriteLine("An I/O error occurred while opening the file");
+                    break;
+                case UnauthorizedAccessException:
+                    Console.WriteLine("This operation is not supported on the current platform. -or- path specified is a directory. -or- The caller does not have the required permission");
+                    break;
+                case NotSupportedException:
+                    Console.WriteLine("path is in an invalid format.");
+                    break;
+                case SecurityException:
+                    Console.WriteLine("The caller does not have the required permission.");
+                    break;
+                default:
+                    Console.WriteLine("The file couldn't be found.");
+                    break;
+            }
+            Environment.Exit(65);
+        }
+        string? sourceCode = null;
+        try
+        {
+            sourceCode = Encoding.UTF8.GetString(file);
+        }
+        catch (ArgumentException)
+        {
+            Console.WriteLine("Couldn't endcode the file with using UTF-8");
+            Environment.Exit(70);
+        }
+        IReadOnlyList<Token> brainFuckProgram = Lexer.ScanTokens(sourceCode);
+        Interpreter.Interpret(brainFuckProgram);
+
+    }
+
+    //Interprets a brainfuck program
+    private static void Interpret(IReadOnlyList<Token> brainFuckProgram)
+    {
+        int cell = 0;
+        for (int i = 0; i < brainFuckProgram.Count; i++)
+        {
+            switch (brainFuckProgram[i].TokenType)
+            {
+                case TokenType.RIGHT_CHEVRON:
+                    if (pointer == memorySize - 1)
+                        pointer = 0;
+                    else
+                        pointer++;
+                    break;
+                case TokenType.LEFT_CHEVRON:
+                    if (pointer is 0)
+                    {
+                        pointer = memorySize - 1;
+                    }
+                    else
+                    {
+                        pointer--;
+                    }
+                    break;
+                case TokenType.PLUS:
+                    memory[pointer]++;
+                    break;
+                case TokenType.MINUS:
+                    memory[pointer]--;
+                    break;
+                case TokenType.DOT:
+                    Console.Write((char)memory[pointer]);
+                    break;
+                case TokenType.COMMA:
+                    memory[pointer] = (byte)Console.ReadKey().KeyChar;
+                    break;
+                case TokenType.LEFT_SQUARE_BRACKET:
+                    if (memory[pointer] is 0)
+                    {
+                        i++;
+                        while (cell > 0 || brainFuckProgram[i].TokenType is not TokenType.RIGHT_SQUARE_BRACKET)
                         {
-                            pointer = memorySize - 1;
-                        }
-                        else
-                        {
-                            pointer--;
-                        }
-                        break;
-                    case '+':
-                        memory[pointer]++;
-                        break;
-                    case '-':
-                        memory[pointer]--;
-                        break;
-                    case '.':
-                        Console.Write((char)memory[pointer]);
-                        break;
-                    case ',':
-                        memory[pointer] = (byte)Console.ReadKey().KeyChar;
-                        break;
-                    case '[':
-                        if (memory[pointer] is 0)
-                        {
+                            if (brainFuckProgram[i].TokenType is TokenType.LEFT_SQUARE_BRACKET)
+                                cell++;
+                            else if (brainFuckProgram[i].TokenType is TokenType.RIGHT_SQUARE_BRACKET)
+                                cell--;
                             i++;
-                            while (cell > 0 || sourceCode[i] is not ']')
-                            {
-                                if (sourceCode[i] is '[')
-                                    cell++;
-                                else if (sourceCode[i] is ']')
-                                    cell--;
-                                i++;
-                            }
                         }
-                        break;
-                    case ']':
-                        if (memory[pointer] is not 0)
+                    }
+                    break;
+                case TokenType.RIGHT_SQUARE_BRACKET:
+                    if (memory[pointer] is not 0)
+                    {
+                        i--;
+                        while (cell > 0 || brainFuckProgram[i].TokenType is not TokenType.LEFT_SQUARE_BRACKET)
                         {
-                            i--;
-                            while (cell > 0 || sourceCode[i] is not '[')
-                            {
-                                if (sourceCode[i] is '[')
-                                    cell++;
-                                else if (sourceCode[i] is ']')
-                                    cell--;
-                                i--;
-                            }
+                            if (brainFuckProgram[i].TokenType is TokenType.RIGHT_SQUARE_BRACKET)
+                                cell++;
+                            else if (brainFuckProgram[i].TokenType is TokenType.LEFT_SQUARE_BRACKET)
+                                cell--;
                             i--;
                         }
-                        break;
-                    default:
-                        //Brainfuck ignores all characters that are not brainfuck instructions (+-<>[],.)
-                        break;
-                }
+                    }
+                    break;
+                default:
+                    //Brainfuck ignores all characters that are not brainfuck instructions (+-<>[],.)
+                    break;
             }
         }
     }
