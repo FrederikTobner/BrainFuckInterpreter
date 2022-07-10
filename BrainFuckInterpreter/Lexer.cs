@@ -48,7 +48,7 @@ namespace BrainFuckInterpreter
                     tokens.Add(new Token(line, TokenType.DOT));
                     break;
                 case ',':
-                    tokens.Add(new Token(line, TokenType.DOT));
+                    tokens.Add(new Token(line, TokenType.COMMA));
                     break;
                 case '[':
                     tokens.Add(new Token(line, TokenType.LEFT_SQUARE_BRACKET));
