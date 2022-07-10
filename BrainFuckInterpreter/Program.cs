@@ -1,3 +1,3 @@
 ﻿using BrainFuckInterpreter;
 
-Interpreter.Run(args);
+Interpreter.RunInterpreter(args);

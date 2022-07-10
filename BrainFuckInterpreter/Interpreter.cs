@@ -20,7 +20,11 @@ internal static class Interpreter
     /// </summary>
     private static readonly byte[] memory = new byte[memorySize];
 
-    internal static void Run(string[] args)
+    /// <summary>
+    /// Starts the interpreter from file or as command prompt, if no file is specified
+    /// </summary>
+    /// <param name="args">The arguments provided by the user when the interpreter was started</param>
+    internal static void RunInterpreter(string[] args)
     {
         if (args.Length is 0)
             RunCommandPrompt();
@@ -31,7 +35,9 @@ internal static class Interpreter
 
     }
 
-    //Run a brainfuck program from the command propmt
+    /// <summary>
+    /// Executes a BrainFuck program from the Command prompt
+    /// </summary>
     private static void RunCommandPrompt()
     {
         for (; ; )
@@ -47,13 +53,14 @@ internal static class Interpreter
             {
                 return;
             }
-            IReadOnlyList<Token> brainFuckProgram = Lexer.ScanTokens(sourceCode);
-            Interpret(brainFuckProgram);
+            Run(sourceCode);
             Console.WriteLine();
         }
     }
 
-    //Run a brainfuck program from a file
+    /// <summary>
+    /// Executes a BrainFuck program from a file
+    /// </summary>
     private static void RunFromFile(string filePath)
     {
         byte[]? file = null;
@@ -99,13 +106,33 @@ internal static class Interpreter
             Console.WriteLine("Couldn't endcode the file with using UTF-8");
             Environment.Exit(70);
         }
-        IReadOnlyList<Token> brainFuckProgram = Lexer.ScanTokens(sourceCode);
-        Interpreter.Interpret(brainFuckProgram);
-
+        Run(sourceCode);
     }
 
-    //Interprets a brainfuck program
-    private static void Interpret(IReadOnlyList<Token> brainFuckProgram)
+    /// <summary>
+    /// Executes a BrainFuck program
+    /// </summary>
+    /// <param name="sourceCode">The sourcecode of the program that shall be executed</param>
+    private static void Run(string sourceCode)
+    {
+        IReadOnlyList<Token> brainFuckProgram = Lexer.ScanTokens(sourceCode);
+        try
+        {
+            Interpreter.RunProgram(brainFuckProgram);
+        }
+        catch (RunTimeError runTimeError)
+        {
+            System.Console.WriteLine(runTimeError.Message);
+            Environment.Exit(70);
+        }
+    }
+
+
+    /// <summary>
+    /// Executes the Program written in Brainfuck
+    /// </summary>
+    /// <param name="program">The program that is executed</param>
+    private static void RunProgram(IReadOnlyList<Token> brainFuckProgram)
     {
         int cell = 0;
         for (int i = 0; i < brainFuckProgram.Count; i++)
@@ -146,11 +173,23 @@ internal static class Interpreter
                         i++;
                         while (cell is not 0 || brainFuckProgram[i].TokenType is not TokenType.RIGHT_SQUARE_BRACKET)
                         {
-                            if (brainFuckProgram[i].TokenType is TokenType.LEFT_SQUARE_BRACKET)
-                                cell++;
-                            else if (brainFuckProgram[i].TokenType is TokenType.RIGHT_SQUARE_BRACKET)
-                                cell--;
+                            switch (brainFuckProgram[i].TokenType)
+                            {
+                                case TokenType.LEFT_SQUARE_BRACKET:
+                                    cell++;
+                                    break;
+                                case TokenType.RIGHT_SQUARE_BRACKET:
+                                    cell--;
+                                    break;
+                                default:
+                                    break;
+                            }
                             i++;
+                            if (i >= brainFuckProgram.Count)
+                            {
+                                throw new RunTimeError("Expect ]");
+                            }
+
                         }
                     }
                     break;
@@ -160,17 +199,29 @@ internal static class Interpreter
                         i--;
                         while (cell is not 0 || brainFuckProgram[i].TokenType is not TokenType.LEFT_SQUARE_BRACKET)
                         {
-                            if (brainFuckProgram[i].TokenType is TokenType.RIGHT_SQUARE_BRACKET)
-                                cell++;
-                            else if (brainFuckProgram[i].TokenType is TokenType.LEFT_SQUARE_BRACKET)
-                                cell--;
+
+                            switch (brainFuckProgram[i].TokenType)
+                            {
+                                case TokenType.RIGHT_SQUARE_BRACKET:
+                                    cell++;
+                                    break;
+                                case TokenType.LEFT_SQUARE_BRACKET:
+                                    cell--;
+                                    break;
+                                default:
+                                    break;
+                            }
                             i--;
+                            if (i < 0)
+                            {
+                                throw new RunTimeError("Expect [");
+                            }
+
                         }
                     }
                     break;
                 default:
-                    //Brainfuck ignores all characters that are not brainfuck instructions (+-<>[],.)
-                    break;
+                    throw new NotImplementedException("Tokentype: " + brainFuckProgram[i].TokenType + " is not implemented");
             }
         }
     }

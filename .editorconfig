@@ -2,3 +2,6 @@
 
 # IDE0022: Blocktextkörper für Methoden verwenden
 dotnet_diagnostic.IDE0022.severity = none
+
+# IDE0160: In namespace eines Blockbereichs konvertieren
+dotnet_diagnostic.IDE0160.severity = none
