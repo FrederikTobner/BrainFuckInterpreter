@@ -66,7 +66,7 @@ namespace BrainFuckInterpreter
             current++;
         }
 
-
+        private static char Advance(string sourceCode) => sourceCode[current++];
 
         private static bool IsAtEnd(string source) => current >= source.Length;
     }

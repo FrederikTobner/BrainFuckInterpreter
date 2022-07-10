@@ -43,7 +43,7 @@ internal static class Interpreter
             {
                 Environment.Exit(0);
             }
-            if (sourceCode is null || sourceCode is "")
+            if (sourceCode is null || string.Empty.Equals(sourceCode))
             {
                 return;
             }
@@ -144,7 +144,7 @@ internal static class Interpreter
                     if (memory[pointer] is 0)
                     {
                         i++;
-                        while (cell > 0 || brainFuckProgram[i].TokenType is not TokenType.RIGHT_SQUARE_BRACKET)
+                        while (cell is not 0 || brainFuckProgram[i].TokenType is not TokenType.RIGHT_SQUARE_BRACKET)
                         {
                             if (brainFuckProgram[i].TokenType is TokenType.LEFT_SQUARE_BRACKET)
                                 cell++;
@@ -158,7 +158,7 @@ internal static class Interpreter
                     if (memory[pointer] is not 0)
                     {
                         i--;
-                        while (cell > 0 || brainFuckProgram[i].TokenType is not TokenType.LEFT_SQUARE_BRACKET)
+                        while (cell is not 0 || brainFuckProgram[i].TokenType is not TokenType.LEFT_SQUARE_BRACKET)
                         {
                             if (brainFuckProgram[i].TokenType is TokenType.RIGHT_SQUARE_BRACKET)
                                 cell++;
