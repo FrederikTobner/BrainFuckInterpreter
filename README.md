@@ -1,2 +1,2 @@
 # BrainFuckInterpreter
-Interpreter for the programming language [brainfuck](https://de.wikipedia.org/wiki/Brainfuck)
+Interpreter for the programming language [brainfuck](https://en.wikipedia.org/wiki/Brainfuck)
